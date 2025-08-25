@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./admin.db"
+}
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  name           String?
+  password       String?
+  role           String     @default("user") // user, admin, moderator
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  
+  posts          Post[]
+  generations    AIGeneration[]
+  schedules      Schedule[]
+  notifications  Notification[]
+  threadsAccount ThreadsAccount?
+}
+
+model ThreadsAccount {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  threadsUserId String
+  accessToken   String
+  refreshToken  String?
+  username      String
+  profileUrl    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id            String    @id @default(cuid())
+  userId        String
+  content       String
+  scheduledFor  DateTime?
+  publishedAt   DateTime?
+  status        String    @default("draft") // draft, scheduled, published, failed
+  threadsPostId String?
+  error         String?
+  views         Int       @default(0)
+  engagements   Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AIGeneration {
+  id               String   @id @default(cuid())
+  userId           String
+  prompt           String
+  generatedContent String
+  model            String
+  tokensUsed       Int
+  cost             Float?   // Cost in USD
+  createdAt        DateTime @default(now())
+  
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id          String   @id @default(cuid())
+  userId      String
+  postId      String?
+  name        String?  // Schedule name for identification
+  time        DateTime
+  frequency   String   // once, daily, weekly, monthly
+  isActive    Boolean  @default(true)
+  lastRun     DateTime?
+  nextRun     DateTime?
+  runCount    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SystemStats {
+  id              String   @id @default(cuid())
+  totalUsers      Int      @default(0)
+  totalPosts      Int      @default(0)
+  totalGenerations Int     @default(0)
+  totalTokensUsed Int      @default(0)
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+  
+  @@unique([date])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // login, user_created, user_deleted, post_moderated, etc.
+  details   String?  // JSON string with additional details
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model SystemSettings {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  value                 String
+  type                  String   // string, number, boolean, json
+  description           String?
+  category              String?  // notification, api, system, etc.
+  isEditable            Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  title       String
+  message     String
+  type        String    // info, warning, error, success
+  priority    String    @default("normal") // low, normal, high, urgent
+  category    String?   // system, api, schedule, user, etc.
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  data        String?   // JSON string for additional data
+  userId      String?   // If null, it's a system-wide notification
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AlertRule {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  condition     String   // JSON string describing the condition
+  metric        String   // api_usage, error_rate, schedule_fails, etc.
+  threshold     Float
+  operator      String   // >, <, >=, <=, ==
+  isActive      Boolean  @default(true)
+  cooldownMinutes Int    @default(60)
+  lastTriggered DateTime?
+  triggerCount  Int      @default(0)
+  actions       String   // JSON array of actions (email, notification, etc.)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
