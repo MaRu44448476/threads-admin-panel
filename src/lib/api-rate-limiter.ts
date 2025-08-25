@@ -173,7 +173,7 @@ export class ApiRateLimiter {
     period: 'hour' | 'day' | 'week' | 'month' = 'day'
   ): Promise<ApiUsageStats[]> {
     try {
-      let startDate = new Date();
+      const startDate = new Date();
       
       switch (period) {
         case 'hour':

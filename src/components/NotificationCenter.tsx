@@ -6,7 +6,7 @@ import {
   Bell,
   X,
   Check,
-  CheckAll,
+  CheckCircle2 as CheckAll,
   Trash2,
   Filter,
   AlertCircle,

@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
 // 使用履歴を取得
 async function getUsageHistory(period: string, userId?: string | null) {
-  let startDate = new Date();
+  const startDate = new Date();
   let groupBy = 'hour';
   
   switch (period) {
